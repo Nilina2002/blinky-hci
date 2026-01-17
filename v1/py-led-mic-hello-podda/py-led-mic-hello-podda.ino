@@ -1,8 +1,8 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
-const char* ssid = "Dialog 4G D92";
-const char* password = "r0La60yD";
+const char* ssid = "test-wifi";
+const char* password = "test-psd";
 
 #define LED_PIN 13
 
