@@ -1,8 +1,6 @@
 #include <WiFi.h>
 #include <WebServer.h>
 
-const char* ssid = "test-wifi";
-const char* password = "test-psd";
 
 #define LED_PIN 13
 
