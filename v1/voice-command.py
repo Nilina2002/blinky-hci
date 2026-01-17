@@ -6,7 +6,7 @@ ESP32_IP = "192.168.8.106"
 r = sr.Recognizer()
 mic = sr.Microphone()
 
-print("Listening for 'hello podda'...")
+print("Listening for 'hello'...")
 
 while True:
     with mic as source:
