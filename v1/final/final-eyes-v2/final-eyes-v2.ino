@@ -29,7 +29,7 @@ SystemState currentState = STUDYING;
 const int eyeWidth = 28;
 const int eyeHeight = 38;
 const int eyeGap = 10;
-const int eyeRadius = 6; // Corner roundness
+const int eyeRadius = 6; // Standard corner roundness
 
 // Positions
 const int leftEyeX = 26;
@@ -37,14 +37,13 @@ const int rightEyeX = 74;
 const int eyeY = 12;
 
 // Animation Variables
-int currentHeight = eyeHeight; // Used for blinking
+int currentHeight = eyeHeight; 
 int blinkState = 0; // 0=Open, 1=Closing, 2=Opening
 unsigned long nextBlinkTime = 0;
 unsigned long nextSaccadeTime = 0;
 
-// Eye Look Offset (Looking left/right)
+// Eye Look Offset
 int pupilOffsetX = 0; 
-int pupilOffsetY = 0; 
 int targetPupilX = 0;
 
 // ---------------- GAME VARIABLES ----------------
@@ -62,34 +61,41 @@ bool beeping = false;
 
 // ---------------- FUNCTIONS ----------------
 
-// --- 1. AKNO DRAWING ENGINE ---
+// --- 1. AKNO DRAWING ENGINE (FIXED) ---
 void drawAknoEyes(int height, int lookX, bool isAngry) {
   // Center Y adjustment based on height (so they blink to the middle)
   int currentY = eyeY + (eyeHeight - height) / 2;
   
-  // 1. Draw Left Eye (Rounded Box)
-  u8g2.drawRBox(leftEyeX + lookX, currentY, eyeWidth, height, eyeRadius);
+  // FIX: DYNAMIC RADIUS CALCULATION
+  // If the eye is closing (height gets small), we must shrink the radius
+  // or else the corners overlap and glitch.
+  int currentRadius = eyeRadius;
+  if (height < (2 * eyeRadius)) {
+    currentRadius = height / 2;
+  }
   
-  // 2. Draw Right Eye (Rounded Box)
-  u8g2.drawRBox(rightEyeX + lookX, currentY, eyeWidth, height, eyeRadius);
+  // 1. Draw Left Eye (Rounded Box with dynamic radius)
+  u8g2.drawRBox(leftEyeX + lookX, currentY, eyeWidth, height, currentRadius);
+  
+  // 2. Draw Right Eye
+  u8g2.drawRBox(rightEyeX + lookX, currentY, eyeWidth, height, currentRadius);
 
-  // 3. ANGRY EYELIDS (The "Akno" Angry look)
-  // We draw black triangles over the top corners to create a slant
+  // 3. ANGRY EYELIDS 
   if (isAngry) {
     u8g2.setDrawColor(0); // Erase mode
     
-    // Left Eye Slant ( / )
+    // Left Eye Slant
     u8g2.drawTriangle(
-      leftEyeX - 5, currentY - 5,                 // Top Left (Way out)
-      leftEyeX + eyeWidth + 5, currentY - 5,      // Top Right (Way out)
-      leftEyeX, currentY + 15                     // Inner point (The slant)
+      leftEyeX - 5, currentY - 5,                 
+      leftEyeX + eyeWidth + 5, currentY - 5,      
+      leftEyeX, currentY + 15                     
     );
     
-    // Right Eye Slant ( \ )
+    // Right Eye Slant
     u8g2.drawTriangle(
-      rightEyeX - 5, currentY - 5,                // Top Left
-      rightEyeX + eyeWidth + 5, currentY - 5,     // Top Right
-      rightEyeX + eyeWidth, currentY + 15         // Inner point
+      rightEyeX - 5, currentY - 5,                
+      rightEyeX + eyeWidth + 5, currentY - 5,     
+      rightEyeX + eyeWidth, currentY + 15         
     );
     
     u8g2.setDrawColor(1); // Restore draw mode
@@ -99,9 +105,8 @@ void drawAknoEyes(int height, int lookX, bool isAngry) {
 void updateAknoPhysics() {
   unsigned long now = millis();
 
-  // A. LOOKING AROUND (Saccades)
+  // A. LOOKING AROUND
   if (now > nextSaccadeTime) {
-    // Pick a new random horizontal spot (Akno looks mostly L/R)
     targetPupilX = random(-8, 9);
     nextSaccadeTime = now + random(1000, 4000);
   }
@@ -149,14 +154,13 @@ void startSleepAlert() {
 void resetToStudying() {
   currentState = STUDYING;
   digitalWrite(led1, LOW); digitalWrite(led2, LOW); digitalWrite(buzzerPin, LOW);
-  currentHeight = eyeHeight; // Eyes open
+  currentHeight = eyeHeight; 
 }
 
 // ---------------- SETUP ----------------
 void setup() {
   Serial.begin(9600);
   
-  // Set I2C Speed (Remove if screen glitches)
   Wire.setClock(400000); 
 
   pinMode(btnLeft, INPUT_PULLUP);
@@ -173,7 +177,6 @@ void setup() {
 
 // ---------------- LOOP ----------------
 void loop() {
-
   // 1. SERIAL CHECK
   if (Serial.available()) {
     String cmd = Serial.readStringUntil('\n');
@@ -189,21 +192,15 @@ void loop() {
 
   u8g2.clearBuffer();
 
-  // ================= STATE: STUDYING (AKNO CUTE) =================
   if (currentState == STUDYING) {
     updateAknoPhysics();
-    // Draw Cute Eyes (False = Not Angry)
     drawAknoEyes(currentHeight, pupilOffsetX, false); 
   }
-
-  // ================= STATE: SLEEP ALERT (AKNO ANGRY) =================
   else if (currentState == SLEEP_ALERT) {
-    
-    // Angry Eyes! (Full height, Centered, True = Angry)
     drawAknoEyes(eyeHeight, 0, true);
-
+    
     // Flashing Text
-    u8g2.setDrawColor(2); // XOR Mode
+    u8g2.setDrawColor(2); 
     u8g2.setFont(u8g2_font_ncenB10_tr);
     if ((millis() / 200) % 2 == 0) u8g2.drawStr(35, 60, "WAKE UP!");
 
@@ -224,10 +221,7 @@ void loop() {
       }
     }
   }
-
-  // ================= STATE: GAME RUNNING =================
   else if (currentState == GAME_RUNNING) {
-    // Game Physics
     if (digitalRead(btnLeft) == LOW && catcherX > 0) catcherX -= 6;
     if (digitalRead(btnRight) == LOW && catcherX < (128 - catcherWidth)) catcherX += 6;
 
@@ -242,7 +236,6 @@ void loop() {
       }
     }
 
-    // Draw Game
     u8g2.setFont(u8g2_font_6x10_tf);
     u8g2.setCursor(0, 10); u8g2.print("Score: "); u8g2.print(score);
     u8g2.drawBox(blockX, blockY, 4, 4);
