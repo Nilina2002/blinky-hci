@@ -5,7 +5,7 @@ import serial
 
 # ---- Configuration ----
 SERIAL_PORT = 'COM13' 
-BAUD_RATE = 9600
+BAUD_RATE = 115200
 EYE_THRESHOLD = 0.21   # Adjusted slightly for better sensitivity
 SLEEP_TIME = 3         # Seconds eyes must be closed to trigger alarm
 
